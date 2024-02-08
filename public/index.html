@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your App</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quilljs-markdown@latest/dist/quilljs-markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ArminRegular';
+            src: url('/fonts/ArminSoft-Regular.ttf');
+        }
+
+        body {
+            display: flex;
+            margin: 0;
+            font-family: ArminRegular; 
+            font-size: smaller;
+        }
+
+        .parent {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: 50px 3fr;
+            grid-column-gap: 0px;
+            grid-row-gap: 0px;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .div1 { grid-area: 1 / 1 / 2 / 3; background-color: #89c6b8; padding: 0 20px; font-size: large; font-weight: 1000; display: flex; align-items: center;}
+        .div2 { grid-area: 2 / 1 / 3 / 2; background-color: #fef7ea; padding: 15px;}
+        .div3 { grid-area: 2 / 2 / 3 / 3; }
+
+        #breadcrumb
+        {
+            display: flex;
+            align-items: center;
+        }
+
+        .breadcrumb-item{
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .breadcrumb-item:hover{
+            background-color: #a9d6cc;
+        }
+
+        #main-content
+        {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #article
+        {
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .ql-container.ql-snow
+        {
+            border: none;
+            font-family: ArminRegular;
+        }
+
+        .folder, .file
+        {
+            list-style-type: none;
+            cursor: pointer;
+            padding: 3px;
+            margin: 1px 0;
+            border-radius: 3px;
+        }
+
+        .folder:hover, .file:hover
+        {
+            background-color: #ffe9c0;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="parent">
+        <div class="div1"><div id="breadcrumb"></div></div>
+        <div class="div2"><div id="file-tree"></div></div>
+        <div class="div3">
+            <div id="main-content">
+                <div id="article">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let fileTreeData;
+
+        socket.on('fileTree', (tree) => {
+            fileTreeData = tree;
+            updateBreadcrumb(['Content']);
+            updateFileTree(tree.children);
+        });
+
+// Declare editor in a broader scope
+let editor; 
+
+socket.on('fileContent', (content) => {
+    document.getElementById('article').innerHTML = `<button id="toggle-editor">Toggle Edit Mode</button>
+                    <div id="editor"></div>`;
+    // Add event listener to the toggle button
+    document.getElementById('toggle-editor').addEventListener('click', toggleEditor);
+    const options = {
+        theme: 'snow', // or other Quill theme
+        // ... other Quill options
+    };
+
+    // Initialize Quill editor
+    editor = new Quill('#editor', options);
+
+    // Initialize QuillMarkdown if needed
+    const markdownOptions = {
+        // Your markdown options
+    };
+    const quillMarkdown = new QuillMarkdown(editor, markdownOptions);
+    const htmlContent = marked.parse(content);
+    // Set content
+    editor.setContents(editor.clipboard.convert(htmlContent));
+
+    toggleEditor();
+});
+
+function toggleEditor() {
+    const isReadOnly = !editor.isEnabled();
+    editor.enable(isReadOnly);
+
+    // Get the toolbar element. Adjust the selector if necessary.
+    const toolbar = document.querySelector('.ql-toolbar');
+
+    if (toolbar) {
+        toolbar.style.display = isReadOnly ? 'block' : 'none'; // Hide toolbar if editor is read-only
+    }
+}
+
+
+
+
+
+
+        socket.on('fileContentError', (errorMessage) => {
+            document.getElementById('main-content').textContent = errorMessage;
+        });
+
+        function updateFileTree(nodes, path = '') {
+            const treeElement = document.getElementById('file-tree');
+
+            // Sort nodes: directories first, then files, both alphabetically
+            nodes.sort((a, b) => {
+                if (a.type === b.type) {
+                    // If both are files or both are directories, sort alphabetically
+                    return a.name.localeCompare(b.name);
+                } else {
+                    // Directories come before files
+                    return a.type === 'directory' ? -1 : 1;
+                }
+            });
+
+            treeElement.innerHTML = nodes.map(node => createTreeHtml(node, path)).join('');
+        }
+
+        function createTreeHtml(node, parentPath) {
+            const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+
+            if (node.type === 'directory') {
+                return `<li class="folder" onclick="openFolder('${currentPath}', '${node.name}')">📂 ${node.name}</li>`;
+            } else {
+                // Pass the path to the file, not the content
+                return `<li class="file" onclick="loadFileContent('${currentPath}')">📃 ${node.name}</li>`; 
+            }
+        }
+
+
+        function openFolder(pathString, folderName) {
+            // Split the path string into an array, excluding empty segments
+            const path = pathString.split('/').filter(Boolean);
+
+            // Special handling for the root level
+            if (pathString === 'Content' || path.length === 0) {
+                updateBreadcrumb(['Content']);
+                updateFileTree(fileTreeData.children, '');
+                return;
+            }
+
+            const folder = findFolder(fileTreeData, path);
+            console.log('Path:', path, 'Folder:', folder);
+
+            if (folder) {
+                updateBreadcrumb(['Content', ...path]);
+                updateFileTree(folder.children, path.join('/'));
+            } else {
+                console.error('Folder not found for path:', path);
+            }
+        }
+
+        function openFolderFromBreadcrumb(fullPath) {
+            // Split the path and remove the 'Content' part
+            const pathParts = fullPath.split('/').filter(part => part !== 'Content');
+            console.log(pathParts);
+            openFolder(pathParts.join('/'), pathParts[pathParts.length - 1]);
+        }
+
+        function updateBreadcrumb(pathParts) {
+            const breadcrumbElement = document.getElementById('breadcrumb');
+            let fullPath = '';
+            breadcrumbElement.innerHTML = pathParts.map((part, index) => {
+                // Skip 'Content' when building the fullPath
+                if (index > 0) {
+                    fullPath += (index > 1 ? '/' : '') + part;
+                }
+
+                // Correctly call openFolder with the necessary path
+                const pathForFunction = index === 0 ? '' : fullPath;
+
+                return `<div class="breadcrumb-item" onclick="openFolder('${pathForFunction}', '${part}')">${part}</div>`;
+            }).join(' > ');
+        }
+
+        function findFolder(node, pathParts) {
+            for (const part of pathParts) {
+                if (node.type !== 'directory') {
+                    return null;
+                }
+                node = node.children.find(child => child.name === part);
+                if (!node) {
+                    return null;
+                }
+            }
+            return node;
+        }
+
+        function loadFileContent(filePath) {
+            // Emit a socket event to request file content
+            socket.emit('requestFileContent', filePath);
+        }
+
+        document.getElementById('new-folder').addEventListener('click', () => {
+            socket.emit('createFolder', 'NewFolder');
+        });
+
+        document.getElementById('new-article').addEventListener('click', () => {
+            socket.emit('createArticle', 'NewArticle.md');
+        });
+    </script>
+</body>
+</html>
