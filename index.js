@@ -43,6 +43,52 @@ io.on('connection', (socket) => {
             }
         });
     });
+
+    socket.on('createFolder', (folderPath) => {
+        const fullPath = path.join(contentPath, folderPath);
+
+        fs.ensureDir(fullPath, err => {
+            if (err) {
+                console.error('Error creating folder:', err);
+                // You can also emit an error message back to the client if needed
+                socket.emit('folderCreationError', 'Failed to create folder');
+            } else {
+                console.log(`Folder created: ${fullPath}`);
+                // Optionally, emit the updated file tree
+                emitFileTree(socket);
+            }
+        });
+    });
+
+    socket.on('createArticle', (filePath) => {
+        const fullPath = path.join(contentPath, filePath);
+    
+        // Use fs.outputFile to create a new file
+        fs.outputFile(fullPath, '', err => { // Starts with an empty file
+            if (err) {
+                console.error('Error creating article:', err);
+                socket.emit('articleCreationError', 'Failed to create article');
+            } else {
+                console.log(`Article created: ${fullPath}`);
+                emitFileTree(socket);
+            }
+        });
+    });
+
+    socket.on('saveFileContent', (data) => {
+        const fullPath = path.join(contentPath, data.filePath);
+        fs.writeFile(fullPath, data.content, 'utf8', err => {
+            if (err) {
+                console.error('Error writing file:', err);
+                // Emit an error response if needed
+                socket.emit('saveFileContentError', 'Failed to save file');
+            } else {
+                console.log(`File saved: ${fullPath}`);
+                // Emit a success response if needed
+                socket.emit('saveFileContentSuccess', 'File saved successfully');
+            }
+        });
+    });
 });
 
 

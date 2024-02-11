@@ -2,10 +2,11 @@
 <html>
 <head>
     <title>Your App</title>
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quilljs-markdown@latest/dist/quilljs-markdown.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.0.0/dist/turndown.js"></script>
     <style>
         @font-face {
             font-family: 'ArminRegular';
@@ -62,7 +63,7 @@
             max-width: 650px;
         }
 
-        .ql-container.ql-snow
+        .ql-container.ql-bubble
         {
             border: none;
             font-family: ArminRegular;
@@ -81,13 +82,85 @@
         {
             background-color: #ffe9c0;
         }
+
+        #new-buttons
+        {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+        }
+
+        .new-button
+        {
+            height: 30px;
+            font-family: ArminRegular;
+            background-color: #fef7ea;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            line-height: 100%;
+            flex-grow: 1;
+        }
+
+        #new-folder-text, #new-article-text
+        {
+            width: 100%;
+            border: none;
+            background-color: none;
+        }
+
+        #new-folder-text:focus-visible, #new-article-text:focus-visible
+        {
+            outline: none;
+        }
+
+        .new-button:hover
+        {
+            background-color: #ffe9c0;
+        }
+
+        .new-button-confirm
+        {
+            background-color: #FFF;
+            border: none;
+            display: flex;
+            width: 20px;
+            justify-content: center;
+        }
+
+        #new-folder-form, #new-article-form
+        {
+            background-color: #FFF;
+            padding: 3px;
+            border: 2px solid #ffe9c0;
+            border-radius: 5px;
+            margin: 3px 0;
+        }
     </style>
     
 </head>
 <body>
     <div class="parent">
         <div class="div1"><div id="breadcrumb"></div></div>
-        <div class="div2"><div id="file-tree"></div></div>
+        <div class="div2">
+            <div id="new-buttons">
+                <input type="button" id="new-folder" class="new-button" value="New Folder">
+                <input type="button" id="new-article" class="new-button" value="New Article">
+            </div>
+            <form id="new-folder-form" style="display: none;">
+                📂
+                <input type="text" id="new-folder-text" required>
+                <input type="submit" id="new-folder-save" class="new-button-confirm" value="✔️">
+                <input type="button" id="new-folder-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
+            </form>
+            <form id="new-article-form" style="display: none;">
+                📃
+                <input type="text" id="new-article-text" required>
+                <input type="submit" id="new-article-save" class="new-button-confirm" value="✔️">
+                <input type="button" id="new-article-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
+            </form>
+            <div id="file-tree"></div>
+        </div>
         <div class="div3">
             <div id="main-content">
                 <div id="article">
@@ -99,57 +172,69 @@
     <script>
         const socket = io();
         let fileTreeData;
+        let editor;
+        let currentPath = '';
 
         socket.on('fileTree', (tree) => {
             fileTreeData = tree;
             updateBreadcrumb(['Content']);
             updateFileTree(tree.children);
+            openFolder(currentPath);
         });
 
-// Declare editor in a broader scope
-let editor; 
+        // Declare editor in a broader scope
+        
 
-socket.on('fileContent', (content) => {
-    document.getElementById('article').innerHTML = `<button id="toggle-editor">Toggle Edit Mode</button>
-                    <div id="editor"></div>`;
-    // Add event listener to the toggle button
-    document.getElementById('toggle-editor').addEventListener('click', toggleEditor);
-    const options = {
-        theme: 'snow', // or other Quill theme
-        // ... other Quill options
-    };
+        socket.on('fileContent', (content) => {
+            console.log(content);
+            document.getElementById('article').innerHTML = `<button id="save-article">Save Article</button>
+                            <div id="editor"></div>`;
 
-    // Initialize Quill editor
-    editor = new Quill('#editor', options);
+            document.getElementById('save-article').addEventListener('click', () => {
+                const turndownService = new TurndownService();
+                const markdown = turndownService.turndown(editor.root.innerHTML);
 
-    // Initialize QuillMarkdown if needed
-    const markdownOptions = {
-        // Your markdown options
-    };
-    const quillMarkdown = new QuillMarkdown(editor, markdownOptions);
-    const htmlContent = marked.parse(content);
-    // Set content
-    editor.setContents(editor.clipboard.convert(htmlContent));
+                socket.emit('saveFileContent', { filePath: currentFilePath, content: markdown });
+            });
 
-    toggleEditor();
-});
+            const options = {
+                theme: 'bubble', // or other Quill theme
+                // ... other Quill options
+            };
 
-function toggleEditor() {
-    const isReadOnly = !editor.isEnabled();
-    editor.enable(isReadOnly);
+            // Initialize Quill editor
+            editor = new Quill('#editor', options);
 
-    // Get the toolbar element. Adjust the selector if necessary.
-    const toolbar = document.querySelector('.ql-toolbar');
+            // Initialize QuillMarkdown if needed
+            const markdownOptions = {
+                // Your markdown options
+            };
 
-    if (toolbar) {
-        toolbar.style.display = isReadOnly ? 'block' : 'none'; // Hide toolbar if editor is read-only
-    }
-}
+            const quillMarkdown = new QuillMarkdown(editor, markdownOptions);
+            const htmlContent = marked.parse(content);
+            // Set content
+            editor.setContents(editor.clipboard.convert(htmlContent));
+        });
 
+        socket.on('saveFileContentSuccess', (message) => {
+            alert(message); // or update the UI accordingly
+        });
 
+        socket.on('saveFileContentError', (errorMessage) => {
+            alert(errorMessage); // or update the UI accordingly
+        });
 
+        function toggleEditor() {
+            const isReadOnly = !editor.isEnabled();
+            editor.enable(isReadOnly);
 
+            // Get the toolbar element. Adjust the selector if necessary.
+            const toolbar = document.querySelector('.ql-toolbar');
 
+            if (toolbar) {
+                toolbar.style.display = isReadOnly ? 'block' : 'none'; // Hide toolbar if editor is read-only
+            }
+        }
 
         socket.on('fileContentError', (errorMessage) => {
             document.getElementById('main-content').textContent = errorMessage;
@@ -185,7 +270,7 @@ function toggleEditor() {
 
 
         function openFolder(pathString, folderName) {
-            // Split the path string into an array, excluding empty segments
+            currentPath = pathString;
             const path = pathString.split('/').filter(Boolean);
 
             // Special handling for the root level
@@ -243,17 +328,68 @@ function toggleEditor() {
         }
 
         function loadFileContent(filePath) {
-            // Emit a socket event to request file content
+            currentFilePath = filePath; // Update the current file path
             socket.emit('requestFileContent', filePath);
         }
 
         document.getElementById('new-folder').addEventListener('click', () => {
-            socket.emit('createFolder', 'NewFolder');
+            document.getElementById('new-article-form').style.display = 'none';
+            document.getElementById('new-article-text').value = '';
+            document.getElementById('new-folder-form').style.display = 'flex';
+        });
+        document.getElementById('new-article').addEventListener('click', () => {
+            document.getElementById('new-folder-form').style.display = 'none';
+            document.getElementById('new-folder-text').value = '';
+            document.getElementById('new-article-form').style.display = 'flex';
         });
 
-        document.getElementById('new-article').addEventListener('click', () => {
-            socket.emit('createArticle', 'NewArticle.md');
+        document.getElementById('new-folder-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submit action
+
+            // Get the value from the input field
+            var folderName = document.getElementById('new-folder-text').value;
+
+            // Ensure the folder name is not empty
+            if (folderName.trim() === '') {
+                alert('Please enter a folder name.');
+                return;
+            }
+
+            // Construct the full path for the new folder
+            const fullPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+            // Use the full path in your socket.emit call
+            socket.emit('createFolder', fullPath);
+
+            // Optionally, clear the input field after submission
+            document.getElementById('new-folder-text').value = '';
+            document.getElementById('new-folder-form').style.display = 'none';
         });
+
+        document.getElementById('new-article-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submit action
+
+            // Get the value from the input field
+            var articleName = document.getElementById('new-article-text').value;
+
+            // Ensure the article name is not empty
+            if (articleName.trim() === '') {
+                alert('Please enter an article name.');
+                return;
+            }
+
+            // Add the .md extension and construct the full path for the new article
+            const fullPath = currentPath ? `${currentPath}/${articleName}.md` : `${articleName}.md`;
+
+            // Use the full path in your socket.emit call
+            socket.emit('createArticle', fullPath);
+
+            // Optionally, clear the input field after submission
+            document.getElementById('new-article-text').value = '';
+            document.getElementById('new-article-form').style.display = 'none';
+        });
+
+        
     </script>
 </body>
 </html>
