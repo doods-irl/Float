@@ -4,12 +4,48 @@ const path = require('path');
 const http = require('http');
 const { Server } = require("socket.io");
 const dirTree = require("directory-tree");
+const searchIndex = require('search-index');
 
 const contentPath = path.join(__dirname, 'content');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+let si;
+
+async function indexDocuments() {
+    console.log("Starting indexing process...");
+
+    try {
+        const index = await searchIndex({ name: 'knowledgebaseIndex' });
+
+        si = index;
+
+        console.log("Reading documents from:", contentPath);
+        const documents = [];
+        dirTree(contentPath, { attributes: ['type'], extensions: /\.md/ }, (item) => {
+            const relativePath = item.path.replace(`${contentPath}\\`, ''); // Convert to relative path
+            const filename = path.basename(item.path); // Extract filename
+            const content = fs.readFileSync(item.path, 'utf8');
+            documents.push({
+                _id: relativePath,
+                filename: filename,
+                content: content,
+            });
+            console.log(documents);
+        });    
+
+        if (documents.length === 0) {
+            console.log("No documents found to index.");
+            return;
+        }
+
+        await si.PUT(documents);
+        console.log('Documents indexed successfully.');
+    } catch (err) {
+        console.error('Error during indexing process:', err);
+    }
+}
 
 function emitFileTree(socket) {
     
@@ -63,8 +99,11 @@ io.on('connection', (socket) => {
     socket.on('createArticle', (filePath) => {
         const fullPath = path.join(contentPath, filePath);
     
-        // Use fs.outputFile to create a new file
-        fs.outputFile(fullPath, '', err => { // Starts with an empty file
+        // Define your placeholder content
+        const placeholderContent = `# New Article\n\nA new article! Time to start typing things up.`;
+    
+        // Use fs.outputFile to create a new file with placeholder content
+        fs.outputFile(fullPath, placeholderContent, err => {
             if (err) {
                 console.error('Error creating article:', err);
                 socket.emit('articleCreationError', 'Failed to create article');
@@ -73,7 +112,9 @@ io.on('connection', (socket) => {
                 emitFileTree(socket);
             }
         });
-    });
+    
+        indexDocuments();
+    });    
 
     socket.on('saveFileContent', (data) => {
         const fullPath = path.join(contentPath, data.filePath);
@@ -88,7 +129,25 @@ io.on('connection', (socket) => {
                 socket.emit('saveFileContentSuccess', 'File saved successfully');
             }
         });
+
+        indexDocuments();
     });
+
+    socket.on('search', async (query) => {
+        if (!si) {
+            socket.emit('searchError', 'Search index is not ready');
+            return;
+        }
+    
+        try {
+            const results = await si.QUERY({ AND: query.split(' ') }, { DOCUMENTS: true });
+            console.log(results);
+            socket.emit('searchResults', results);
+        } catch (err) {
+            console.error('Search error:', err);
+            socket.emit('searchError', 'Error performing search');
+        }    
+    });    
 });
 
 
@@ -97,3 +156,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+indexDocuments();

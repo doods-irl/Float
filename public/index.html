@@ -30,8 +30,23 @@
             height: 100vh;
         }
 
-        .div1 { grid-area: 1 / 1 / 2 / 3; background-color: #89c6b8; padding: 0 20px; font-size: large; font-weight: 1000; display: flex; align-items: center;}
-        .div2 { grid-area: 2 / 1 / 3 / 2; background-color: #fef7ea; padding: 15px;}
+        .div1 {
+            grid-area: 1 / 1 / 2 / 3;
+            background-color: #89c6b8;
+            font-size: large;
+            font-weight: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            width: 100%;
+            height: 50px;
+            z-index: 1;}
+        .div2 { grid-area: 2 / 1 / 3 / 2; background-color: #fef7ea; padding: 15px;
+        position: fixed;
+        top: 50px;
+        height: -webkit-fill-available;
+        width: 250px;}
         .div3 { grid-area: 2 / 2 / 3 / 3; }
 
         #breadcrumb
@@ -60,7 +75,12 @@
         #article
         {
             width: 100%;
-            max-width: 650px;
+            max-width: 750px;
+        }
+
+        .ql-container
+        {
+            font-size: medium;
         }
 
         .ql-container.ql-bubble
@@ -136,13 +156,126 @@
             border-radius: 5px;
             margin: 3px 0;
         }
+
+        #search-box
+        {
+            display: none;
+        }
+
+        #search-box input
+        {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px solid #CCC;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        #search-results ul {
+            padding: 0;
+        }
+
+        #search-results ul li{
+            list-style-type: none;
+            padding: 3px;
+            margin: 1px 0;
+            border-radius: 3px;
+        }
+
+        #search-results ul li a{
+            text-decoration: none;
+            color: black;
+        }
+
+
+        #search-results ul li:hover{
+            background-color: #ffe9c0;
+        }
+
+        .topbar-button
+        {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .topbar-button:hover
+        {
+            background-color: #a9d6cc;
+        }
+
+        .ql-editor[contenteditable=true]
+        {
+            
+            border-radius: 15px;
+            background-image: linear-gradient(45deg, #ffffdb 25%, #ffffe3 25%, #ffffe3 50%, #ffffdb 50%, #ffffdb 75%, #ffffe3 75%, #ffffe3 100%);
+            background-size: 56.57px 56.57px;
+        }
+
+        #article-edit-buttons
+        {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 50px;
+            right: 0px;
+            z-index: 1;
+        }
+        #article-edit-buttons button
+        {
+            height: 30px;
+            font-family: ArminRegular;
+            background-color: #fef7ea;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            line-height: 100%;
+            flex-grow: 1;
+            margin: 5px 10px;
+            border: 2px solid #ffd077;
+        }
+
+        #enable-editor:hover
+        {
+            background-color: #ffe9c0;
+        }
+
+        #cancel-changes:hover
+        {
+            background-color: #ffc0c0;
+        }
+
+        .ql-editor h1{
+            border-bottom: 2px solid #AAA;
+            margin-bottom: 10px;
+        }
+        .ql-editor h2 {
+            border-bottom: 1px solid #AAA;
+            margin-bottom: 10px;
+        }
+
+        .ql-bubble .ql-editor img
+        {
+            max-width: 100%;
+        }
     </style>
     
 </head>
 <body>
     <div class="parent">
-        <div class="div1"><div id="breadcrumb"></div></div>
+        <div class="div1">
+            <div id="breadcrumb"></div>
+            <div id="topbar-links">
+                <div id="search-link" class="topbar-button">🔍</div>
+            </div>
+        </div>
         <div class="div2">
+            <div id="file-view">
             <div id="new-buttons">
                 <input type="button" id="new-folder" class="new-button" value="New Folder">
                 <input type="button" id="new-article" class="new-button" value="New Article">
@@ -160,6 +293,11 @@
                 <input type="button" id="new-article-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
             </form>
             <div id="file-tree"></div>
+            </div>
+            <div id="search-box">
+                <input type="text" id="search-input">
+                <div id="search-results"></div>
+            </div>
         </div>
         <div class="div3">
             <div id="main-content">
@@ -183,41 +321,99 @@
         });
 
         // Declare editor in a broader scope
-        
+        let cachedContent; // Variable to cache the original content
 
-        socket.on('fileContent', (content) => {
-            console.log(content);
-            document.getElementById('article').innerHTML = `<button id="save-article">Save Article</button>
-                            <div id="editor"></div>`;
+socket.on('fileContent', (content) => {
+    document.getElementById('article').innerHTML = `
+        <div id="article-edit-buttons">
+        <button id="enable-editor">Edit this page</button>
+        <button id="cancel-changes" style="display:none;">Discard Changes</button>
+        </div>
+        <div id="editor"></div>`;
 
-            document.getElementById('save-article').addEventListener('click', () => {
-                const turndownService = new TurndownService();
-                const markdown = turndownService.turndown(editor.root.innerHTML);
+    cachedContent = content; // Cache the original content
 
-                socket.emit('saveFileContent', { filePath: currentFilePath, content: markdown });
-            });
+    const editButton = document.getElementById('enable-editor');
+    const cancelButton = document.getElementById('cancel-changes');
 
-            const options = {
-                theme: 'bubble', // or other Quill theme
-                // ... other Quill options
-            };
+    editButton.addEventListener('click', () => {
+        const isEditing = editButton.textContent === 'Edit this page';
+        toggleEditor();
+
+        if (isEditing) {
+            // Switch to 'Save Changes' mode
+            editButton.textContent = 'Save Changes';
+            cancelButton.style.display = 'inline'; // Show the discard button
+        } else {
+            // Save changes
+            const turndownService = new TurndownService();
+            const markdown = turndownService.turndown(editor.root.innerHTML);
+            socket.emit('saveFileContent', { filePath: currentFilePath, content: markdown });
+            editButton.textContent = 'Edit this page';
+            cancelButton.style.display = 'none'; // Hide the discard button
+        }
+    });
+
+    cancelButton.addEventListener('click', () => {
+        // Discard changes and revert to original content
+        const htmlContent = marked.parse(cachedContent);
+        editor.setContents(editor.clipboard.convert(htmlContent));
+        editButton.textContent = 'Edit this page';
+        cancelButton.style.display = 'none';
+        toggleEditor();
+    });
+
+    var toolbarOptions = [
+                ['bold', 'italic', 'underline'],        // toggled buttons
+                ['blockquote'],
+                [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [ 'link', 'image', 'video', 'formula' ],
+                ['clean']                                         // remove formatting button
+            ];
+
 
             // Initialize Quill editor
-            editor = new Quill('#editor', options);
+            editor = new Quill('#editor', { modules: {
+                toolbar: toolbarOptions
+                },
+            theme: 'bubble'
+            });
 
             // Initialize QuillMarkdown if needed
             const markdownOptions = {
-                // Your markdown options
+                theme: 'bubble'
             };
 
             const quillMarkdown = new QuillMarkdown(editor, markdownOptions);
+
+            content = content.replace(/^\s{2}$/gm, '<br>')
             const htmlContent = marked.parse(content);
-            // Set content
+            console.log(content);
+            console.log(htmlContent);
             editor.setContents(editor.clipboard.convert(htmlContent));
+
+            toggleEditor();
         });
 
         socket.on('saveFileContentSuccess', (message) => {
-            alert(message); // or update the UI accordingly
+            const success = document.createElement('div');
+            success.style.position = 'fixed';
+            success.style.right = '100px';
+            success.style.top = '13px';
+            success.style.backgroundColor = '#4CAF50'; // Green background
+            success.style.color = 'white'; // White text
+            success.style.padding = '5px';
+            success.style.borderRadius = '5px';
+            success.style.zIndex = '1000'; // Ensure it's on top
+            success.textContent = 'Saved!'; // Set the text content
+
+            document.body.appendChild(success);
+
+            // Optional: Remove the message after a few seconds
+            setTimeout(() => {
+                document.body.removeChild(success);
+            }, 3000); // 3 seconds delay
         });
 
         socket.on('saveFileContentError', (errorMessage) => {
@@ -227,13 +423,6 @@
         function toggleEditor() {
             const isReadOnly = !editor.isEnabled();
             editor.enable(isReadOnly);
-
-            // Get the toolbar element. Adjust the selector if necessary.
-            const toolbar = document.querySelector('.ql-toolbar');
-
-            if (toolbar) {
-                toolbar.style.display = isReadOnly ? 'block' : 'none'; // Hide toolbar if editor is read-only
-            }
         }
 
         socket.on('fileContentError', (errorMessage) => {
@@ -263,19 +452,20 @@
             if (node.type === 'directory') {
                 return `<li class="folder" onclick="openFolder('${currentPath}', '${node.name}')">📂 ${node.name}</li>`;
             } else {
-                // Pass the path to the file, not the content
-                return `<li class="file" onclick="loadFileContent('${currentPath}')">📃 ${node.name}</li>`; 
+                cleanName = node.name.replace('.md', '');
+                return `<li class="file" onclick="loadFileContent('${currentPath}')">📃 ${cleanName}</li>`; 
             }
         }
 
 
         function openFolder(pathString, folderName) {
+            closeSearch();
             currentPath = pathString;
             const path = pathString.split('/').filter(Boolean);
 
             // Special handling for the root level
             if (pathString === 'Content' || path.length === 0) {
-                updateBreadcrumb(['Content']);
+                updateBreadcrumb(['🏠 Home']);
                 updateFileTree(fileTreeData.children, '');
                 return;
             }
@@ -284,18 +474,11 @@
             console.log('Path:', path, 'Folder:', folder);
 
             if (folder) {
-                updateBreadcrumb(['Content', ...path]);
+                updateBreadcrumb(['🏠 Home', ...path]);
                 updateFileTree(folder.children, path.join('/'));
             } else {
                 console.error('Folder not found for path:', path);
             }
-        }
-
-        function openFolderFromBreadcrumb(fullPath) {
-            // Split the path and remove the 'Content' part
-            const pathParts = fullPath.split('/').filter(part => part !== 'Content');
-            console.log(pathParts);
-            openFolder(pathParts.join('/'), pathParts[pathParts.length - 1]);
         }
 
         function updateBreadcrumb(pathParts) {
@@ -389,7 +572,68 @@
             document.getElementById('new-article-form').style.display = 'none';
         });
 
-        
+        document.getElementById('search-link').addEventListener('click', () => {
+            document.getElementById('file-view').style = 'display: none;';
+            document.getElementById('search-box').style = 'display: block;';
+            document.getElementById('search-input').focus();
+        });
+
+        document.getElementById('search-input').addEventListener('input', () => {
+            const query = document.getElementById('search-input').value;
+            socket.emit('search', query);
+        });
+
+        socket.on('searchResults', (results) => {
+            console.log(results);
+            displaySearchResults(results);
+        });
+
+        function closeSearch() {
+            document.getElementById('file-view').style = 'display: block;';
+            document.getElementById('search-box').style = 'display: none;';
+            document.getElementById('search-input').value = '';
+            document.getElementById('search-results').innerHTML = '';
+
+        }
+
+        function displaySearchResults(results) {
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            // Access the results array
+            const searchResults = results.RESULT || [];
+
+            if (searchResults.length === 0) {
+                resultsDiv.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+
+            const resultList = document.createElement('ul');
+
+            searchResults.forEach(result => {
+                const resultItem = document.createElement('li');
+                resultItem.style.cursor = 'pointer';
+                resultItem.title = result._id;
+
+                // Create a link element
+                const link = document.createElement('div');
+                const path = document.createElement('div');
+                path.style.fontSize = 'smaller';
+                path.style.color = '#777';
+                path.innerHTML = result._id;
+                link.innerHTML = '📃' + result._doc.filename.replace(/\.md$/, ''); // Filename without .md extension
+                resultItem.onclick = (e) => {
+                    e.preventDefault(); // Prevent default link behavior
+                    loadFileContent(result._id); // Function to load and display file content
+                };
+
+                resultItem.appendChild(link);
+                resultItem.appendChild(path);
+                resultList.appendChild(resultItem);
+            });
+
+            resultsDiv.appendChild(resultList);
+        }
     </script>
 </body>
 </html>
