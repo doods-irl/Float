@@ -21,7 +21,6 @@ async function indexDocuments() {
 
         si = index;
 
-        console.log("Reading documents from:", contentPath);
         const documents = [];
         dirTree(contentPath, { attributes: ['type'], extensions: /\.md/ }, (item) => {
             const relativePath = item.path.replace(`${contentPath}\\`, ''); // Convert to relative path
@@ -32,7 +31,6 @@ async function indexDocuments() {
                 filename: filename,
                 content: content,
             });
-            console.log(documents);
         });    
 
         if (documents.length === 0) {
@@ -51,7 +49,6 @@ function emitFileTree(socket) {
     
     try {
         const tree = dirTree(contentPath, {attributes: ['type'], extensions: /\.md/ });
-        console.log(tree);
         socket.emit('fileTree', tree);
     } catch (error) {
         console.error('Error reading file tree:', error);
@@ -75,7 +72,11 @@ io.on('connection', (socket) => {
                 console.error('Error reading file:', err);
                 socket.emit('fileContentError', 'Failed to read file');
             } else {
-                socket.emit('fileContent', data);
+                // Extract the filename from the fullPath
+                const fileName = path.basename(fullPath);
+
+                // Send both the file content and the filename
+                socket.emit('fileContent', { content: data, fileName: fileName });
             }
         });
     });
@@ -96,25 +97,42 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('createArticle', (filePath) => {
+    socket.on('createArticle', (filePath, fromTemplate) => {
         const fullPath = path.join(contentPath, filePath);
+        const templatesDir = path.join(__dirname, 'templates');
+        
+        // Function to create file with given content
+        const createFile = (content) => {
+            fs.outputFile(fullPath, content, err => {
+                if (err) {
+                    console.error('Error creating article:', err);
+                    socket.emit('articleCreationError', 'Failed to create article');
+                } else {
+                    console.log(`Article created: ${fullPath}`);
+                    emitFileTree(socket); // Assuming this function updates the client with the new file structure
+                    indexDocuments(); // Assuming this function indexes the new documents
+                }
+            });
+        };
     
-        // Define your placeholder content
-        const placeholderContent = `# New Article\n\nA new article! Time to start typing things up.`;
-    
-        // Use fs.outputFile to create a new file with placeholder content
-        fs.outputFile(fullPath, placeholderContent, err => {
-            if (err) {
-                console.error('Error creating article:', err);
-                socket.emit('articleCreationError', 'Failed to create article');
-            } else {
-                console.log(`Article created: ${fullPath}`);
-                emitFileTree(socket);
-            }
-        });
-    
-        indexDocuments();
-    });    
+        // Check if a template is specified
+        if (fromTemplate) {
+            const templatePath = path.join(templatesDir, fromTemplate);
+            fs.readFile(templatePath, 'utf8', (err, data) => {
+                if (err) {
+                    console.error('Error reading template:', err);
+                    socket.emit('articleCreationError', 'Failed to read template');
+                } else {
+                    createFile(data);
+                }
+            });
+        } else {
+            // Default placeholder content
+            const defaultContent = `# New Article\n\nA new article! Time to start typing things up.`;
+            createFile(defaultContent);
+        }
+        socket.emit('returnNewArticle', filePath);
+    });
 
     socket.on('saveFileContent', (data) => {
         const fullPath = path.join(contentPath, data.filePath);
@@ -141,13 +159,26 @@ io.on('connection', (socket) => {
     
         try {
             const results = await si.QUERY({ AND: query.split(' ') }, { DOCUMENTS: true });
-            console.log(results);
             socket.emit('searchResults', results);
         } catch (err) {
             console.error('Search error:', err);
             socket.emit('searchError', 'Error performing search');
         }    
-    });    
+    });
+
+    socket.on('getTemplates', () => {
+        const templatesDir = path.join(__dirname, 'templates'); // 'templates' is the folder in your root directory
+
+        fs.readdir(templatesDir, (err, files) => {
+            if (err) {
+                console.error('Error reading templates directory:', err);
+                return;
+            }
+
+            const mdFiles = files.filter(file => file.endsWith('.md'));
+            socket.emit('receiveTemplates', mdFiles);
+        });
+    });
 });
 
 

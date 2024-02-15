@@ -39,9 +39,11 @@
             align-items: center;
             justify-content: space-between;
             position: fixed;
-            width: 100%;
+            width: -webkit-fill-available;
             height: 50px;
-            z-index: 1;}
+            z-index: 1;
+            padding: 0 10px;
+        }
         .div2 { grid-area: 2 / 1 / 3 / 2; background-color: #fef7ea; padding: 15px;
         position: fixed;
         top: 50px;
@@ -80,7 +82,8 @@
 
         .ql-container
         {
-            font-size: medium;
+            font-size: 1em;
+            height: fit-content;
         }
 
         .ql-container.ql-bubble
@@ -108,6 +111,7 @@
             display: flex;
             justify-content: space-between;
             gap: 5px;
+            margin: 0 0 10px 0;
         }
 
         .new-button
@@ -120,13 +124,13 @@
             border-radius: 5px;
             line-height: 100%;
             flex-grow: 1;
+            border: 2px solid #ffe9c0;
         }
 
         #new-folder-text, #new-article-text
         {
             width: 100%;
             border: none;
-            background-color: none;
         }
 
         #new-folder-text:focus-visible, #new-article-text:focus-visible
@@ -148,7 +152,38 @@
             justify-content: center;
         }
 
-        #new-folder-form, #new-article-form
+        #new-article-form, #new-folder-form
+        {
+            padding: 10px;
+            background-color: #ffe9c0;
+            border-radius: 10px;
+        }
+
+        #new-article-form input[type=text], #new-folder-form input[type=text]
+        {
+            font-family: 'ArminRegular';
+        }
+
+        #new-article-form
+        {
+            flex-direction: column;
+        }
+
+        #new-article-form select
+        {
+            border: 2px solid #ffe9c0;
+            padding: 3px;
+            font-family: 'ArminRegular';
+            border-radius: 5px;
+            outline: none;
+        }
+
+        #new-article-input
+        {
+            display: flex;
+        }
+
+        #new-folder-form, #new-article-input
         {
             background-color: #FFF;
             padding: 3px;
@@ -211,10 +246,29 @@
 
         .ql-editor[contenteditable=true]
         {
-            
+            outline: 2px solid #fef7ea;
             border-radius: 15px;
-            background-image: linear-gradient(45deg, #ffffdb 25%, #ffffe3 25%, #ffffe3 50%, #ffffdb 50%, #ffffdb 75%, #ffffe3 75%, #ffffe3 100%);
+            background-image: linear-gradient(45deg, #FFF 25%, #FFFFF4 25%, #FFFFF4 50%, #FFF 50%, #FFF 75%, #FFFFF4 75%, #FFFFF4 100%);
             background-size: 56.57px 56.57px;
+        }
+
+        .ql-editor[contenteditable=true]::before
+        {
+            display: block;
+            content: 'Editing';
+            font-size: large;
+            width: fit-content;
+            background-color: #ffe9c0;
+            text-align: center;
+            border-radius: 15px;
+            padding: 3px 10px;
+            color: black;
+            font-style: normal;
+            height: fit-content;
+            position: absolute;
+            left: unset;
+            right: 5px;
+            top: 5px;
         }
 
         #article-edit-buttons
@@ -228,16 +282,18 @@
         }
         #article-edit-buttons button
         {
-            height: 30px;
+            font-size: 2em;
+            height: 2.5em;
+            width: 2.5em;
             font-family: ArminRegular;
             background-color: #fef7ea;
             padding: 8px;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             line-height: 100%;
             flex-grow: 1;
-            margin: 5px 10px;
-            border: 2px solid #ffd077;
+            border: 2px solid #ffe9c0;
+            margin: 10px 10px 0 0;
         }
 
         #enable-editor:hover
@@ -250,18 +306,54 @@
             background-color: #ffc0c0;
         }
 
-        .ql-editor h1{
-            border-bottom: 2px solid #AAA;
+        .ql-bubble .ql-editor h1{
             margin-bottom: 10px;
+            padding: 2px 5px;
+            width: 100%;
+            margin: 10px auto;
+            text-align: center;
+            background-color: #89c6b8;
+            border-radius: 10px;
+            color: white;
+            font-weight: 100;
         }
-        .ql-editor h2 {
-            border-bottom: 1px solid #AAA;
+        .ql-bubble .ql-editor h2 {
             margin-bottom: 10px;
+            padding: 0px 5px;
+            width: fit-content;
+            border-bottom: 2px solid #89c6b8;
+        }
+
+        .ql-bubble .ql-editor p {
+            text-indent: 1em;
+        }
+
+        .ql-bubble .ql-editor blockquote
+        {
+            border-left: 3px solid #ffe9c0;
+            background-color: #fef7ea;
+            border-radius: 10px;
+            padding: 10px;
         }
 
         .ql-bubble .ql-editor img
         {
-            max-width: 100%;
+            max-width: 150px;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        #article-title
+        {
+            font-size: xx-large;
+            text-align: center;
+            font-weight: 600;
+            padding: 20px 0;
+            width: 100%;
+            position: sticky;
+            top: 50px;
+            z-index: 999;
+            background: linear-gradient(to bottom, rgba(255,255,255,1) 0%,rgba(255,255,255,1) 32%,rgba(255,255,255,0) 100%);
         }
     </style>
     
@@ -282,15 +374,18 @@
             </div>
             <form id="new-folder-form" style="display: none;">
                 📂
-                <input type="text" id="new-folder-text" required>
+                <input type="text" id="new-folder-text" placeholder="Name your folder..." required>
                 <input type="submit" id="new-folder-save" class="new-button-confirm" value="✔️">
                 <input type="button" id="new-folder-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
             </form>
             <form id="new-article-form" style="display: none;">
+                From Template: <select id="template-dropdown"></select>
+                <div id="new-article-input">
                 📃
-                <input type="text" id="new-article-text" required>
+                <input type="text" id="new-article-text" placeholder="Name your file..." required>
                 <input type="submit" id="new-article-save" class="new-button-confirm" value="✔️">
-                <input type="button" id="new-article-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
+                <input type="button" id="new-article-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-article-form').style.display = 'none'; document.getElementById('new-article-text').value = '';">
+                </div>
             </form>
             <div id="file-tree"></div>
             </div>
@@ -323,12 +418,16 @@
         // Declare editor in a broader scope
         let cachedContent; // Variable to cache the original content
 
-socket.on('fileContent', (content) => {
+socket.on('fileContent', (data) => {
+    let content = data.content;
+    let fileName = data.fileName;
+    let cleanName = fileName.replace('.md', '');
     document.getElementById('article').innerHTML = `
         <div id="article-edit-buttons">
-        <button id="enable-editor">Edit this page</button>
-        <button id="cancel-changes" style="display:none;">Discard Changes</button>
+        <button id="enable-editor">📝</button>
+        <button id="cancel-changes" style="display:none;">❌</button>
         </div>
+        <div id="article-title">${cleanName}</div>
         <div id="editor"></div>`;
 
     cachedContent = content; // Cache the original content
@@ -337,19 +436,19 @@ socket.on('fileContent', (content) => {
     const cancelButton = document.getElementById('cancel-changes');
 
     editButton.addEventListener('click', () => {
-        const isEditing = editButton.textContent === 'Edit this page';
+        const isEditing = editButton.textContent === '📝';
         toggleEditor();
 
         if (isEditing) {
             // Switch to 'Save Changes' mode
-            editButton.textContent = 'Save Changes';
+            editButton.textContent = '💾';
             cancelButton.style.display = 'inline'; // Show the discard button
         } else {
             // Save changes
             const turndownService = new TurndownService();
             const markdown = turndownService.turndown(editor.root.innerHTML);
             socket.emit('saveFileContent', { filePath: currentFilePath, content: markdown });
-            editButton.textContent = 'Edit this page';
+            editButton.textContent = '📝';
             cancelButton.style.display = 'none'; // Hide the discard button
         }
     });
@@ -358,7 +457,7 @@ socket.on('fileContent', (content) => {
         // Discard changes and revert to original content
         const htmlContent = marked.parse(cachedContent);
         editor.setContents(editor.clipboard.convert(htmlContent));
-        editButton.textContent = 'Edit this page';
+        editButton.textContent = '📝';
         cancelButton.style.display = 'none';
         toggleEditor();
     });
@@ -366,9 +465,9 @@ socket.on('fileContent', (content) => {
     var toolbarOptions = [
                 ['bold', 'italic', 'underline'],        // toggled buttons
                 ['blockquote'],
-                [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+                [{ 'header': 1 }, { 'header': 2 } ],               // custom button values
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [ 'link', 'image', 'video', 'formula' ],
+                [ 'link', 'image', 'video' ],
                 ['clean']                                         // remove formatting button
             ];
 
@@ -389,12 +488,44 @@ socket.on('fileContent', (content) => {
 
             content = content.replace(/^\s{2}$/gm, '<br>')
             const htmlContent = marked.parse(content);
-            console.log(content);
-            console.log(htmlContent);
             editor.setContents(editor.clipboard.convert(htmlContent));
+
+            document.querySelectorAll('.ql-editor img').forEach(img => {
+                img.addEventListener('click', () => {
+                    const modal = createImageModal(img.src);
+                    document.body.appendChild(modal);
+                });
+            });
 
             toggleEditor();
         });
+
+        function createImageModal(src) {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.left = '0';
+            modal.style.top = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '1000';
+            modal.style.cursor = 'pointer';
+
+            const image = new Image();
+            image.src = src;
+            image.style.maxWidth = '80%';
+            image.style.maxHeight = '80%';
+            modal.appendChild(image);
+
+            modal.addEventListener('click', () => {
+                modal.remove();
+            });
+
+            return modal;
+        }
 
         socket.on('saveFileContentSuccess', (message) => {
             const success = document.createElement('div');
@@ -471,7 +602,6 @@ socket.on('fileContent', (content) => {
             }
 
             const folder = findFolder(fileTreeData, path);
-            console.log('Path:', path, 'Folder:', folder);
 
             if (folder) {
                 updateBreadcrumb(['🏠 Home', ...path]);
@@ -521,10 +651,27 @@ socket.on('fileContent', (content) => {
             document.getElementById('new-folder-form').style.display = 'flex';
         });
         document.getElementById('new-article').addEventListener('click', () => {
-            document.getElementById('new-folder-form').style.display = 'none';
-            document.getElementById('new-folder-text').value = '';
-            document.getElementById('new-article-form').style.display = 'flex';
+        document.getElementById('new-folder-form').style.display = 'none';
+        document.getElementById('new-folder-text').value = '';
+        document.getElementById('new-article-form').style.display = 'flex';
+        
+        socket.emit('getTemplates');
+        
+        socket.on('receiveTemplates', (templates) => {
+            const dropdown = document.getElementById('template-dropdown');
+            dropdown.innerHTML = ''; // Clear existing options if necessary
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.innerHTML = 'No Template';
+            dropdown.appendChild(blank);
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template;
+                option.innerHTML = template.replace('.md','');
+                dropdown.appendChild(option);
+            });
         });
+    });
 
         document.getElementById('new-folder-form').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent the default form submit action
@@ -563,13 +710,18 @@ socket.on('fileContent', (content) => {
 
             // Add the .md extension and construct the full path for the new article
             const fullPath = currentPath ? `${currentPath}/${articleName}.md` : `${articleName}.md`;
+            const fromTemplate = document.getElementById('template-dropdown').value;
 
             // Use the full path in your socket.emit call
-            socket.emit('createArticle', fullPath);
+            socket.emit('createArticle', fullPath, fromTemplate);
 
             // Optionally, clear the input field after submission
             document.getElementById('new-article-text').value = '';
             document.getElementById('new-article-form').style.display = 'none';
+        });
+
+        socket.on('returnNewArticle', (filePath) => {
+            loadFileContent(filePath);
         });
 
         document.getElementById('search-link').addEventListener('click', () => {
@@ -584,7 +736,6 @@ socket.on('fileContent', (content) => {
         });
 
         socket.on('searchResults', (results) => {
-            console.log(results);
             displaySearchResults(results);
         });
 
