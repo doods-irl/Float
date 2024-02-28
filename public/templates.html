@@ -32,7 +32,7 @@
 
         .div1 {
             grid-area: 1 / 1 / 2 / 3;
-            background-color: #89c6b8;
+            background-color: #89a5c6;
             font-size: larger;
             font-weight: 1000;
             display: flex;
@@ -60,16 +60,8 @@
         .breadcrumb-item{
             padding: 5px 5px;
             margin: 0 5px;
-            cursor: pointer;
             border-radius: 5px;
-            background-color: #a9d6cc;
-            max-width: 150px;
-            text-overflow: ellipsis;
-            overflow: hidden;
-        }
-
-        .breadcrumb-item:hover{
-            background-color: #c6e7e0;
+            background-color: #abc0da;
         }
 
         #main-content
@@ -121,7 +113,7 @@
             background-color: #ffe9c0;
         }
 
-        #tree-file, #tree-folder
+        #tree-file
         {
             width: 90%;
             text-wrap: nowrap;
@@ -141,12 +133,13 @@
         {
             height: 30px;
             font-family: ArminRegular;
-            background-color: #ffeac2;
+            background-color: #fef7ea;
             padding: 8px;
             border: none;
             border-radius: 5px;
             line-height: 100%;
             flex-grow: 1;
+            border: 2px solid #ffe9c0;
         }
 
         #new-folder-text, #new-article-text
@@ -162,7 +155,7 @@
 
         .new-button:hover
         {
-            background-color: rgb(255, 241, 216);
+            background-color: #ffe9c0;
         }
 
         .new-button-confirm
@@ -174,7 +167,7 @@
             justify-content: center;
         }
 
-        #new-article-form, #new-folder-form
+        #new-article-form
         {
             margin: 0 0 10px 0;
             padding: 10px;
@@ -215,46 +208,10 @@
             margin: 3px 0;
         }
 
-        #search-box
-        {
-            display: none;
-        }
-
-        #search-box input
-        {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 2px solid #CCC;
-            border-radius: 10px;
-            outline: none;
-        }
-
-        #search-results ul {
-            padding: 0;
-        }
-
-        #search-results ul li{
-            list-style-type: none;
-            padding: 3px;
-            margin: 1px 0;
-            border-radius: 3px;
-        }
-
-        #search-results ul li a{
-            text-decoration: none;
-            color: black;
-        }
-
-
-        #search-results ul li:hover{
-            background-color: #ffe9c0;
-        }
-
         #topbar-links
         {
             display: flex;
-            background-color: #a9d6cc;
+            background-color: #abc0da;
             border-radius: 5px;
         }
 
@@ -272,7 +229,7 @@
 
         .topbar-button:hover
         {
-            background-color: #c6e7e0;
+            background-color: #c8d8eb;
         }
 
         .ql-editor[contenteditable=true]
@@ -313,11 +270,12 @@
         }
         #article-edit-buttons button
         {
-            font-size: 1.5em;
-            height: 2em;
-            width: 2em;
+            font-size: 2em;
+            height: 2.5em;
+            width: 2.5em;
             font-family: ArminRegular;
             background-color: #fef7ea;
+            padding: 8px;
             border: none;
             border-radius: 10px;
             line-height: 100%;
@@ -326,7 +284,7 @@
             margin: 10px 10px 0 0;
         }
 
-        #enable-editor:hover
+        #enable-editor:hover, #save-template:hover
         {
             background-color: #ffe9c0;
         }
@@ -413,11 +371,6 @@
         {
             display: block;
         }
-
-        .folder-delete:hover:after
-        {
-            content: '❌';
-        }
     </style>
     
 </head>
@@ -426,44 +379,32 @@
         <div class="div1">
             <div id="breadcrumb"></div>
             <div id="topbar-links">
-                <a href="templates.html" id="templates-link" class="topbar-button">✨</a>
-                <a href="deleted.html" id="deleted-files-link" class="topbar-button">🗑️</a>
-                <div id="search-link" class="topbar-button">🔍</div>
+                <a href="index.html" id="home-link" class="topbar-button" >❌</a>
             </div>
         </div>
         <div class="div2">
             <div id="file-view">
             <div id="new-buttons">
-                <input type="button" id="new-folder" class="new-button" value="New Folder">
-                <input type="button" id="new-article" class="new-button" value="New Article">
+                <input type="button" id="new-article" class="new-button" value="New Template">
             </div>
-            <form id="new-folder-form" style="display: none;">
-                📂
-                <input type="text" id="new-folder-text" placeholder="Name your folder..." required>
-                <input type="submit" id="new-folder-save" class="new-button-confirm" value="✔️">
-                <input type="button" id="new-folder-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-folder-form').style.display = 'none'">
-            </form>
             <form id="new-article-form" style="display: none;">
-                From Template: <select id="template-dropdown"></select>
                 <div id="new-article-input">
                 📃
-                <input type="text" id="new-article-text" placeholder="Name your file..." required>
+                <input type="text" id="new-article-text" placeholder="Name your template..." required>
                 <input type="submit" id="new-article-save" class="new-button-confirm" value="✔️">
                 <input type="button" id="new-article-cancel" class="new-button-confirm" value="❌" onclick="document.getElementById('new-article-form').style.display = 'none'; document.getElementById('new-article-text').value = '';">
                 </div>
             </form>
             <div id="file-tree"></div>
             </div>
-            <div id="search-box">
-                <input type="text" id="search-input">
-                <div id="search-results"></div>
-            </div>
         </div>
         <div class="div3">
             <div id="main-content">
                 <div id="article">
-                        <div id="article-title">Welcome to Float!</div>
-                        <div id="editor"><p style="font-size: x-large;">Welcome to our super-smart, Node.js-powered knowledgebase! It's like having a magic wand for all your digital content. Imagine zapping files into place, summoning lost documents with a search spell, and snapping folders into order – all in real-time! Whether you're creating, organizing, or bringing back the 'oops-deleted' files, it's all a breeze. So, let's dive in and make managing content the coolest thing ever!</p></div>
+                        <div id="article-title">Templates!</div>
+                        <div id="editor">
+                        <p style="font-size: x-large;">Here you can create and manage templates! Create one just like you would an article, and it will be available to select when creating a new article from the main interface.<br><br>
+                        Careful deleting templates from here, <b>they can't be recovered like deleted articles!</b></p></div>
                 </div>
             </div>
         </div>
@@ -475,7 +416,7 @@
         let editor;
         let currentPath = '';
 
-        socket.emit('requestFiles');
+        socket.emit('requestTemplateFiles');
 
         // Receive filetree data
         socket.on('fileTree', (tree) => {
@@ -512,13 +453,12 @@
         // Render the tree to the sidebar
         function createTreeHtml(node, parentPath) {
             const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-            
+
             if (node.type === 'directory') {
-                const directoryIndicator = node.children.length === 0 ? `<div class="folder-delete" onclick="deleteFolder('${currentPath}')">${node.children.length}</div>` : `${node.children.length}`;
-                return `<li class="folder"><div id="tree-folder" onclick="openFolder('${currentPath}', '${node.name}')">📂 ${node.name} </div><div style="float: right; background-color: #ffe9c0; font-size: smaller; width: 20px; border-radius: 10px; text-align: center;">${directoryIndicator}</div></li>`;
+                return `<li class="folder" onclick="openFolder('${currentPath}', '${node.name}')">📂 ${node.name}</li>`;
             } else {
                 cleanName = node.name.replace('.md', '');
-                return `<li class="file" onclick="setFocusColour(event)"><div id="tree-file" data-path="${currentPath}" onclick="loadFileContent('${currentPath}')">📃 ${cleanName} </div><div id="delete-file-button" onclick="deleteFile('${currentPath}')" style="writing-mode: vertical-lr; font-size: smaller; width: 20px; text-align: center;">❌</div></li>`; 
+                return `<li class="file" onclick="setFocusColour(event)"><div id="tree-file" data-path="${currentPath}" onclick="loadTemplateContent('${currentPath}')">📃 ${cleanName} </div><div id="delete-file-button" onclick="deleteTemplateFile('${currentPath}')">🗑️</div></li>`; 
             }
         }
 
@@ -534,13 +474,12 @@
 
         // Open a folder
         function openFolder(pathString, folderName) {
-            closeSearch();
             currentPath = pathString;
             const path = pathString.split('/').filter(Boolean);
 
             // Special handling for the root level
             if (pathString === 'Content' || path.length === 0) {
-                updateBreadcrumb(['🏠 Home']);
+                updateBreadcrumb(['✨ Templates']);
                 updateFileTree(fileTreeData.children, '');
                 return;
             }
@@ -548,7 +487,7 @@
             const folder = findFolder(fileTreeData, path);
 
             if (folder) {
-                updateBreadcrumb(['🏠 Home', ...path]);
+                updateBreadcrumb(['✨ Templates', ...path]);
                 updateFileTree(folder.children, path.join('/'));
             } else {
                 console.error('Folder not found for path:', path);
@@ -556,20 +495,14 @@
         }
 
         // Request a file
-        function loadFileContent(filePath) {
+        function loadTemplateContent(filePath) {
             currentFilePath = filePath; // Update the current file path
-            socket.emit('requestFileContent', filePath);
+            socket.emit('requestTemplateFileContent', filePath);
         }
 
         // Request a file
-        function deleteFile(filePath) {
-            socket.emit('deleteFile', filePath);
-            document.getElementById('article').innerHTML = `
-                <h1>Deleted ${filePath}</h1>`;
-        }
-
-        function deleteFolder(filePath) {
-            socket.emit('deleteFolder', filePath);
+        function deleteTemplateFile(filePath) {
+            socket.emit('deleteTemplateFile', filePath);
             document.getElementById('article').innerHTML = `
                 <h1>Deleted ${filePath}</h1>`;
         }
@@ -592,6 +525,7 @@
 
             const editButton = document.getElementById('enable-editor');
             const cancelButton = document.getElementById('cancel-changes');
+            const templateButton = document.getElementById('save-template');
             const articleTitle = document.getElementById('article-title');
             
             // Listen for button events to toggle the editor and actions
@@ -607,16 +541,15 @@
                     articleTitle.setAttribute('disabled', '');
                     let markdown = turndownService.turndown(editor.root.innerHTML);
                     markdown = markdown.replace(/^\n/gm, '');
-                    socket.emit('saveFileContent', { filePath: currentFilePath, name: fileName, submittedFileName: articleTitle.value, content: markdown });
+                    socket.emit('saveTemplateContent', { filePath: currentFilePath, name: fileName, submittedFileName: articleTitle.value, content: markdown });
                     editButton.textContent = '📝';
                     cancelButton.style.display = 'none';
-                    loadFileContent(currentFilePath);
                 }
             });
 
             // If the edit is cancelled, reload the article
             cancelButton.addEventListener('click', () => {
-                loadFileContent(currentFilePath);
+                loadTemplateContent(currentFilePath);
             });
 
             // Rules for the turndown service for md formatting
@@ -704,57 +637,8 @@
             editor.enable(isReadOnly);
         }
 
-        // Handle new folder button click
-        document.getElementById('new-folder').addEventListener('click', () => {
-            document.getElementById('new-article-form').style.display = 'none';
-            document.getElementById('new-article-text').value = '';
-            document.getElementById('new-folder-form').style.display = 'flex';
-        });
-        //New folder submission actions
-        document.getElementById('new-folder-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the default form submit action
-
-            // Get the value from the input field
-            var folderName = document.getElementById('new-folder-text').value;
-
-            // Ensure the folder name is not empty
-            if (folderName.trim() === '') {
-                alert('Please enter a folder name.');
-                return;
-            }
-
-            // Construct the full path for the new folder
-            const fullPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-
-            // Use the full path in your socket.emit call
-            socket.emit('createFolder', fullPath);
-
-            // Optionally, clear the input field after submission
-            document.getElementById('new-folder-text').value = '';
-            document.getElementById('new-folder-form').style.display = 'none';
-        });
-        // Handle new article button click
         document.getElementById('new-article').addEventListener('click', () => {
-            document.getElementById('new-folder-form').style.display = 'none';
-            document.getElementById('new-folder-text').value = '';
             document.getElementById('new-article-form').style.display = 'flex';
-        
-            socket.emit('getTemplates');
-            
-            socket.on('receiveTemplates', (templates) => {
-                const dropdown = document.getElementById('template-dropdown');
-                dropdown.innerHTML = ''; // Clear existing options if necessary
-                const blank = document.createElement('option');
-                blank.value = '';
-                blank.innerHTML = 'No Template';
-                dropdown.appendChild(blank);
-                templates.forEach(template => {
-                    const option = document.createElement('option');
-                    option.value = template;
-                    option.innerHTML = template.replace('.md','');
-                    dropdown.appendChild(option);
-                });
-            });
         });
         //New article submission actions
         document.getElementById('new-article-form').addEventListener('submit', function(event) {
@@ -771,10 +655,9 @@
 
             // Add the .md extension and construct the full path for the new article
             const fullPath = currentPath ? `${currentPath}/${articleName}.md` : `${articleName}.md`;
-            const fromTemplate = document.getElementById('template-dropdown').value;
 
             // Use the full path in your socket.emit call
-            socket.emit('createArticle', fullPath, fromTemplate);
+            socket.emit('createTemplate', fullPath);
 
             // Optionally, clear the input field after submission
             document.getElementById('new-article-text').value = '';
@@ -784,15 +667,13 @@
         socket.on('saveFileContentSuccess', (message) => {
             const success = document.createElement('div');
             success.style.position = 'fixed';
-            success.style.right = '150px';
-            success.style.top = '9px';
-            success.style.backgroundColor = '#a9d6cc'; // Green background
-            success.style.color = 'black'; // White text
+            success.style.right = '100px';
+            success.style.top = '13px';
+            success.style.backgroundColor = '#4CAF50'; // Green background
+            success.style.color = 'white'; // White text
             success.style.padding = '5px';
             success.style.borderRadius = '5px';
-            success.style.zIndex = '1000';
-            success.style.fontSize = '1.5em';
-            success.style.fontWeight = '600'; // Ensure it's on top
+            success.style.zIndex = '1000'; // Ensure it's on top
             success.textContent = 'Saved!'; // Set the text content
 
             document.body.appendChild(success);
@@ -833,7 +714,7 @@
                 // Correctly call openFolder with the necessary path
                 const pathForFunction = index === 0 ? '' : fullPath;
 
-                return `<div class="breadcrumb-item" onclick="openFolder('${pathForFunction}', '${part}')">${part}</div>`;
+                return `<div class="breadcrumb-item", '${part}')">${part}</div>`;
             }).join(' > ');
         }
 
@@ -851,70 +732,8 @@
         }
 
         socket.on('returnNewArticle', (filePath) => {
-            loadFileContent(filePath);
+            loadTemplateContent(filePath);
         });
-
-        document.getElementById('search-link').addEventListener('click', () => {
-            document.getElementById('file-view').style = 'display: none;';
-            document.getElementById('search-box').style = 'display: block;';
-            document.getElementById('search-input').focus();
-            updateBreadcrumb(['🔍 Search ❌']);
-        });
-
-        document.getElementById('search-input').addEventListener('input', () => {
-            const query = document.getElementById('search-input').value;
-            socket.emit('search', query);
-        });
-
-        socket.on('searchResults', (results) => {
-            displaySearchResults(results);
-        });
-
-        function closeSearch() {
-            document.getElementById('file-view').style = 'display: block;';
-            document.getElementById('search-box').style = 'display: none;';
-            document.getElementById('search-input').value = '';
-            document.getElementById('search-results').innerHTML = '';
-        }
-
-        function displaySearchResults(results) {
-            const resultsDiv = document.getElementById('search-results');
-            resultsDiv.innerHTML = ''; // Clear previous results
-
-            // Access the results array
-            const searchResults = results.RESULT || [];
-
-            if (searchResults.length === 0) {
-                resultsDiv.innerHTML = '<p>No results found.</p>';
-                return;
-            }
-
-            const resultList = document.createElement('ul');
-
-            searchResults.forEach(result => {
-                const resultItem = document.createElement('li');
-                resultItem.style.cursor = 'pointer';
-                resultItem.title = result._id;
-
-                // Create a link element
-                const link = document.createElement('div');
-                const path = document.createElement('div');
-                path.style.fontSize = 'smaller';
-                path.style.color = '#777';
-                path.innerHTML = result._id;
-                link.innerHTML = '📃' + result._doc.filename.replace(/\.md$/, ''); // Filename without .md extension
-                resultItem.onclick = (e) => {
-                    e.preventDefault(); // Prevent default link behavior
-                    loadFileContent(result._id); // Function to load and display file content
-                };
-
-                resultItem.appendChild(link);
-                resultItem.appendChild(path);
-                resultList.appendChild(resultItem);
-            });
-
-            resultsDiv.appendChild(resultList);
-        }
     </script>
 </body>
 </html>
